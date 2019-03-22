@@ -1,10 +1,14 @@
+using System.Threading;
+using System.Threading.Tasks;
+using RabbitReplay.Shared;
+
 namespace RabbitReplay.Replay
 {
-    public class Replayer
+    public class Replayer : IProgramVerb
     {
-        public int Replay()
+        public Task<int> Run(CancellationToken cancellationToken)
         {
-            return 255;
+            return Task.FromResult(0);
         }
     }
 }

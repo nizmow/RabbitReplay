@@ -1,13 +1,16 @@
 using System;
 using System.IO;
 using System.IO.Abstractions;
+using System.Threading;
+using System.Threading.Tasks;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitReplay.App.Options;
+using RabbitReplay.Shared;
 
 namespace RabbitReplay.Record
 {
-    public class Recorder : IDisposable
+    public class Recorder : IDisposable, IProgramVerb
     {
         private const string FirehoseExchange = "amq.rabbitmq.trace";
         private const string RecorderQueue = "rabbitreplay_recorder";
@@ -16,6 +19,8 @@ namespace RabbitReplay.Record
         private readonly IConnection _connection;
         private readonly IModel _channel;
         private readonly Stream _outputStream;
+        private readonly string _routingKey;
+        private readonly string _file;
 
         public Recorder(RecordOptions options, IFileSystem fileSystem)
         {
@@ -27,14 +32,16 @@ namespace RabbitReplay.Record
             };
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _outputStream = fileSystem.File.Open("test.trace", FileMode.OpenOrCreate);
+            _file = options.OutputFile;
+            _outputStream = fileSystem.File.Open(options.OutputFile, FileMode.OpenOrCreate);
+            _routingKey = options.RoutingKey;
         }
 
-        public int Record()
+        public Task<int> Run(CancellationToken cancellationToken)
         {
             // create channel: not durable, exclusive, auto-delete
             _channel.QueueDeclare(RecorderQueue, false, true, true, null);
-            _channel.QueueBind(RecorderQueue, FirehoseExchange, "#", null);
+            _channel.QueueBind(RecorderQueue, FirehoseExchange, _routingKey, null);
 
             var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += (ch, eventArgs) =>
@@ -44,11 +51,12 @@ namespace RabbitReplay.Record
             };
 
             _channel.BasicConsume(consumer, RecorderQueue, true);
-
-            return 0;
+            Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
+            
+            cancellationToken.WaitHandle.WaitOne();
+            
+            return Task.FromResult(0);
         }
-
-        public delegate Recorder Factory(RecordOptions options);
 
         public void Dispose()
         {
