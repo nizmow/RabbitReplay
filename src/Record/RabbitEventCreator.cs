@@ -15,8 +15,8 @@ namespace RabbitReplay.Record
                 Connection = UnsupportedString,
                 Exchange = e.Exchange,
                 Node = UnsupportedString,
-                Payload = "", // todo
-                Properties = null, // todo
+                Payload = System.Convert.ToBase64String(e.Body),
+                Properties = RabbitEventPropertiesCreator.Create(e.BasicProperties),
                 Queue = UnsupportedString,
                 RoutedKeys = new[] { e.RoutingKey },
                 RoutedQueues = new[] { UnsupportedString },

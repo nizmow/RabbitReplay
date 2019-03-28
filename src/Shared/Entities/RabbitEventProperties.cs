@@ -8,7 +8,7 @@ namespace RabbitReplay.Shared.Entities
 
         public int DeliveryMode { get; set; }
 
-        public Dictionary<string, string> Headers { get; set; }
+        public Dictionary<string, object> Headers { get; set; }
 
         public string MessageId { get; set; }
     }

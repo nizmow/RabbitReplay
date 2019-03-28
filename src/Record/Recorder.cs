@@ -3,6 +3,8 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitReplay.App.Options;
@@ -21,6 +23,9 @@ namespace RabbitReplay.Record
         private readonly Stream _outputStream;
         private readonly string _routingKey;
         private readonly string _file;
+        private readonly StreamWriter _textWriter;
+        private readonly JsonTextWriter _jsonWriter;
+        private readonly IFileSystem _fileSystem;
 
         public Recorder(RecordOptions options, IFileSystem fileSystem)
         {
@@ -33,7 +38,7 @@ namespace RabbitReplay.Record
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
             _file = options.OutputFile;
-            _outputStream = fileSystem.File.Open(options.OutputFile, FileMode.OpenOrCreate);
+            _fileSystem = fileSystem;
             _routingKey = options.RoutingKey;
         }
 
@@ -44,24 +49,34 @@ namespace RabbitReplay.Record
             _channel.QueueBind(RecorderQueue, FirehoseExchange, _routingKey, null);
 
             var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += (ch, eventArgs) =>
-            {
-                Console.WriteLine(eventArgs.Body);
-                _outputStream.Write(eventArgs.Body, 0, eventArgs.Body.Length);
-            };
 
-            _channel.BasicConsume(consumer, RecorderQueue, true);
-            Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
-            
-            cancellationToken.WaitHandle.WaitOne();
-            
+            var serializer = new JsonSerializer();
+            serializer.Formatting = Formatting.None;
+            serializer.ContractResolver = new CamelCasePropertyNamesContractResolver();
+
+            using (var textWriter = new StreamWriter(_fileSystem.File.Open(_file, FileMode.OpenOrCreate)))
+            using (var jsonWriter = new JsonTextWriter(textWriter))
+            {
+                consumer.Received += (ch, eventArgs) =>
+                {
+                    var payload = RabbitEventCreator.Create(eventArgs);
+                    serializer.Serialize(jsonWriter, payload);
+                    textWriter.WriteLine();
+                };
+                _channel.BasicConsume(consumer, RecorderQueue, true);
+                Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
+                cancellationToken.WaitHandle.WaitOne();
+            }
+
             return Task.FromResult(0);
         }
 
         public void Dispose()
         {
             Console.WriteLine("Disposing!");
-            _outputStream?.Dispose();
+            // I've no idea why .Dispose is protected here?
+            ((IDisposable)_jsonWriter)?.Dispose();
+            _textWriter?.Dispose();
             _channel?.Dispose();
             _connection?.Dispose();
         }

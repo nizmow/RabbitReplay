@@ -1,4 +1,6 @@
 using System;
+using Newtonsoft.Json;
+using RabbitReplay.Shared.Serialization;
 
 namespace RabbitReplay.Shared.Entities
 {
@@ -22,6 +24,10 @@ namespace RabbitReplay.Shared.Entities
 
         public string[] RoutedKeys { get; set; }
 
+        /// <summary>
+        /// The trace files from the RMQ plugin use a strange date format, so we'll try and stay compatible with it.
+        /// </summary>
+        [JsonConverter(typeof(DateFormatConverter), "yyyy-MM-dd HH:mm:ss.fff")]
         public DateTime Timestamp { get; set; }
 
         public string Type { get; set; }
