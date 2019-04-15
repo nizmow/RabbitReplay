@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Impl;
@@ -16,12 +18,17 @@ namespace RabbitReplay.Record
                 return new RabbitEventProperties();
             }
 
+            // in RMQ headers are just a bundle of strings, so this should be safe.
+            var decodedHeaders = headers.ToDictionary(
+                d => d.Key,
+                d => Encoding.UTF8.GetString((byte[])d.Value));
+
             return new RabbitEventProperties
             {
-                ContentType = DecodeHelpers.FromBase64DictionaryKeyOrDefault(properties, "content_type"),
-                MessageId = DecodeHelpers.FromBase64DictionaryKeyOrDefault(properties, "message_id"),
+                ContentType = DecodeHelpers.StringFromByteDictionaryOrDefault(properties, "content_type"),
+                MessageId = DecodeHelpers.StringFromByteDictionaryOrDefault(properties, "message_id"),
                 DeliveryMode = (int)properties["delivery_mode"],
-                Headers = DecodeHelpers.ConvertBase64Dictionary(headers),
+                Headers = decodedHeaders,
             };
         }
     }

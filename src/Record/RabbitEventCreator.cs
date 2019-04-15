@@ -18,13 +18,13 @@ namespace RabbitReplay.Record
             return new RabbitEvent
             {
                 Channel = (int)headers["channel"],
-                Connection = DecodeHelpers.FromBase64DictionaryKeyOrDefault(headers, "connection"),
-                Exchange = DecodeHelpers.FromBase64DictionaryKeyOrDefault(headers, "exchange_name"),
-                Node = DecodeHelpers.FromBase64DictionaryKeyOrDefault(headers, "node"),
+                Connection = DecodeHelpers.StringFromByteDictionaryOrDefault(headers, "connection"),
+                Exchange = DecodeHelpers.StringFromByteDictionaryOrDefault(headers, "exchange_name"),
+                Node = DecodeHelpers.StringFromByteDictionaryOrDefault(headers, "node"),
                 Payload = Convert.ToBase64String(e.Body),
                 Properties = RabbitEventPropertiesCreator.Create(e.BasicProperties),
-                User = DecodeHelpers.FromBase64DictionaryKeyOrDefault(headers, "user"),
-                VHost = DecodeHelpers.FromBase64DictionaryKeyOrDefault(headers, "vhost"),
+                User = DecodeHelpers.StringFromByteDictionaryOrDefault(headers, "user"),
+                VHost = DecodeHelpers.StringFromByteDictionaryOrDefault(headers, "vhost"),
                 Type = "published",
                 Timestamp = DateTime.Now,
 
