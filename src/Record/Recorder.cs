@@ -18,14 +18,14 @@ namespace RabbitReplay.Record
         private const string RecorderQueue = "rabbitreplay_recorder";
 
         private readonly RecordOptions _options;
-        private readonly IConnection _connection;
-        private readonly IModel _channel;
-        private readonly Stream _outputStream;
         private readonly string _routingKey;
         private readonly string _file;
+
+        // IDisposable, remember to clean up!
         private readonly StreamWriter _textWriter;
         private readonly JsonTextWriter _jsonWriter;
-        private readonly IFileSystem _fileSystem;
+        private readonly IConnection _connection;
+        private readonly IModel _channel;
 
         public Recorder(RecordOptions options, IFileSystem fileSystem)
         {
@@ -35,11 +35,14 @@ namespace RabbitReplay.Record
                 Uri = options.RabbitUri,
                 AutomaticRecoveryEnabled = false
             };
+            _file = options.OutputFile;
+            _routingKey = options.RoutingKey;
+
+            // disposables! clean them up!
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _file = options.OutputFile;
-            _fileSystem = fileSystem;
-            _routingKey = options.RoutingKey;
+            _textWriter = new StreamWriter(fileSystem.File.Open(_file, FileMode.OpenOrCreate));
+            _jsonWriter = new JsonTextWriter(_textWriter);
         }
 
         public Task<int> Run(CancellationToken cancellationToken)
@@ -52,29 +55,33 @@ namespace RabbitReplay.Record
 
             var serializer = new JsonSerializer();
             serializer.Formatting = Formatting.None;
-            serializer.ContractResolver = new CamelCasePropertyNamesContractResolver();
-
-            using (var textWriter = new StreamWriter(_fileSystem.File.Open(_file, FileMode.OpenOrCreate)))
-            using (var jsonWriter = new JsonTextWriter(textWriter))
+            serializer.ContractResolver = new DefaultContractResolver
             {
-                consumer.Received += (ch, eventArgs) =>
+                NamingStrategy = new SnakeCaseNamingStrategy
                 {
-                    try
-                    {
-                        var payload = RabbitEventCreator.Create(eventArgs);
-                        serializer.Serialize(jsonWriter, payload);
-                        textWriter.WriteLine();
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                        throw;
-                    }
-                };
-                _channel.BasicConsume(consumer, RecorderQueue, true);
-                Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
-                cancellationToken.WaitHandle.WaitOne();
-            }
+                    // when we drop a dictionary into here (eg: headers) it makes sense to leave the keys AS IS.
+                    ProcessDictionaryKeys = false,
+                },
+            };
+
+            consumer.Received += (ch, eventArgs) =>
+            {
+                try
+                {
+                    var payload = RabbitEventCreator.Create(eventArgs);
+                    serializer.Serialize(_jsonWriter, payload);
+                    _textWriter.WriteLine();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    throw;
+                }
+            };
+
+            _channel.BasicConsume(consumer, RecorderQueue, true);
+            Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
+            cancellationToken.WaitHandle.WaitOne();
 
             return Task.FromResult(0);
         }
@@ -82,11 +89,11 @@ namespace RabbitReplay.Record
         public void Dispose()
         {
             Console.WriteLine("Disposing!");
+            _channel?.Dispose();
+            _connection?.Dispose();
             // I've no idea why .Dispose is protected here?
             ((IDisposable)_jsonWriter)?.Dispose();
             _textWriter?.Dispose();
-            _channel?.Dispose();
-            _connection?.Dispose();
         }
     }
 }

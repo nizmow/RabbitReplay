@@ -20,10 +20,8 @@ namespace RabbitReplay.Shared.Entities
 
         public string Queue { get; set; }
 
-        [JsonProperty("routed_queues")]
         public string[] RoutedQueues { get; set; }
 
-        [JsonProperty("routing_keys")]
         public string[] RoutingKeys { get; set; }
 
         /// <summary>
@@ -37,7 +35,7 @@ namespace RabbitReplay.Shared.Entities
         public string User { get; set; }
 
         /// <summary>
-        /// We don't camel case this to match the format.
+        /// Tricksy property names.
         /// </summary>
         [JsonProperty("vhost")]
         public string VHost { get; set; }
