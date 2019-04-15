@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitReplay.App.Options
+namespace RabbitReplay.Shared.Options
 {
     public class ReplayOptions : GlobalOptions
     {

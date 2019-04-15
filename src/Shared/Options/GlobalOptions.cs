@@ -1,7 +1,7 @@
 using System;
 using CommandLine;
 
-namespace RabbitReplay.App.Options
+namespace RabbitReplay.Shared.Options
 {
     public class GlobalOptions
     {

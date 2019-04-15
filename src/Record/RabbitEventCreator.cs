@@ -34,10 +34,5 @@ namespace RabbitReplay.Record
                 RoutedQueues = new[] { UnsupportedString },
             };
         }
-
-        private static string FromBase64Bytes(byte[] encodedBytes)
-        {
-            return string.Empty;
-        }
     }
 }

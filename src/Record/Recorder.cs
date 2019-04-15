@@ -7,8 +7,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitReplay.App.Options;
 using RabbitReplay.Shared;
+using RabbitReplay.Shared.Options;
 
 namespace RabbitReplay.Record
 {

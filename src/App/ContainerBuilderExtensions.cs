@@ -1,10 +1,8 @@
 using Autofac;
-using Autofac.Builder;
 using CommandLine;
-using RabbitReplay.App.Options;
 using RabbitReplay.Record;
 using RabbitReplay.Replay;
-using RabbitReplay.Shared;
+using RabbitReplay.Shared.Options;
 
 namespace RabbitReplay.App
 {

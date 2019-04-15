@@ -3,14 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using CommandLine;
-using RabbitReplay.App.Options;
 using RabbitReplay.Shared;
+using RabbitReplay.Shared.Options;
 
 namespace RabbitReplay.App
 {
     class Program
     {
-        static async Task<int> Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
             // We bind our options later, but for now fast-fail. It's a bit of repetition.
             var results = Parser.Default.ParseArguments<RecordOptions, ReplayOptions>(args);
