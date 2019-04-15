@@ -20,9 +20,11 @@ namespace RabbitReplay.Shared.Entities
 
         public string Queue { get; set; }
 
+        [JsonProperty("routed_queues")]
         public string[] RoutedQueues { get; set; }
 
-        public string[] RoutedKeys { get; set; }
+        [JsonProperty("routing_keys")]
+        public string[] RoutingKeys { get; set; }
 
         /// <summary>
         /// The trace files from the RMQ plugin use a strange date format, so we'll try and stay compatible with it.
@@ -34,6 +36,10 @@ namespace RabbitReplay.Shared.Entities
 
         public string User { get; set; }
 
+        /// <summary>
+        /// We don't camel case this to match the format.
+        /// </summary>
+        [JsonProperty("vhost")]
         public string VHost { get; set; }
     }
 }

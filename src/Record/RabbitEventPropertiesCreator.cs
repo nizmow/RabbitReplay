@@ -10,12 +10,18 @@ namespace RabbitReplay.Record
     {
         public static RabbitEventProperties Create(IBasicProperties p)
         {
+            // RMQ, I dunno... properties and headers within headers and properties?
+            if (!(p.Headers["properties"] is Dictionary<string, object> properties) || !(properties["headers"] is Dictionary<string, object> headers))
+            {
+                return new RabbitEventProperties();
+            }
+
             return new RabbitEventProperties
             {
-                ContentType = p.ContentType,
-                MessageId = p.MessageId,
-                DeliveryMode = p.DeliveryMode,
-                Headers = (Dictionary<string, object>) p.Headers,
+                ContentType = DecodeHelpers.FromBase64DictionaryKeyOrDefault(properties, "content_type"),
+                MessageId = DecodeHelpers.FromBase64DictionaryKeyOrDefault(properties, "message_id"),
+                DeliveryMode = (int)properties["delivery_mode"],
+                Headers = DecodeHelpers.ConvertBase64Dictionary(headers),
             };
         }
     }

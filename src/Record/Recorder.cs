@@ -59,9 +59,17 @@ namespace RabbitReplay.Record
             {
                 consumer.Received += (ch, eventArgs) =>
                 {
-                    var payload = RabbitEventCreator.Create(eventArgs);
-                    serializer.Serialize(jsonWriter, payload);
-                    textWriter.WriteLine();
+                    try
+                    {
+                        var payload = RabbitEventCreator.Create(eventArgs);
+                        serializer.Serialize(jsonWriter, payload);
+                        textWriter.WriteLine();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                        throw;
+                    }
                 };
                 _channel.BasicConsume(consumer, RecorderQueue, true);
                 Console.WriteLine($"Recording from the firehose to '{_file}' with routing key '{_routingKey}'.");
