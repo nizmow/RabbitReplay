@@ -1,0 +1,21 @@
+trigger:
+- master
+
+pr:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: sdk
+    version: 2.2.300
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+  
+- script: dotnet restore
+  displayName: 'Package Restore'
+
+- script: dotnet build --no-restore
+  displayName: 'Build'
